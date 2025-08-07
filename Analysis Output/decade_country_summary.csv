@@ -1,0 +1,80 @@
+"decade","Country","rust_count","unique_rust_species"
+1850,"Nicaragua",2,2
+1870,"Costa Rica",1,1
+1870,"Guatemala",2,2
+1880,"Costa Rica",1,1
+1880,"El Salvador",1,1
+1880,"Guatemala",1,1
+1880,"Nicaragua",1,1
+1880,"Panama",2,2
+1890,"Costa Rica",10,9
+1890,"Guatemala",13,10
+1890,"Nicaragua",4,4
+1890,"Panama",2,2
+1900,"Belize",1,1
+1900,"Costa Rica",8,8
+1900,"El Salvador",1,1
+1900,"Guatemala",284,141
+1900,"Nicaragua",10,9
+1900,"Panama",2,2
+1910,"Costa Rica",227,119
+1910,"El Salvador",4,4
+1910,"Guatemala",613,216
+1910,"Nicaragua",3,2
+1910,"Panama",46,31
+1920,"Costa Rica",227,120
+1920,"El Salvador",121,72
+1920,"Guatemala",10,10
+1920,"Honduras",23,20
+1920,"Nicaragua",2,2
+1920,"Panama",235,80
+1930,"Belize",93,57
+1930,"Costa Rica",10,8
+1930,"Guatemala",430,175
+1930,"Honduras",3,2
+1930,"Panama",2,2
+1940,"Costa Rica",25,20
+1940,"El Salvador",63,47
+1940,"Guatemala",661,236
+1940,"Honduras",230,106
+1940,"Nicaragua",37,24
+1940,"Panama",1,1
+1950,"Costa Rica",4,4
+1950,"El Salvador",2,2
+1950,"Guatemala",5,5
+1950,"Honduras",172,106
+1950,"Nicaragua",14,9
+1950,"Panama",16,6
+1960,"Belize",4,3
+1960,"Costa Rica",19,12
+1960,"El Salvador",2,2
+1960,"Guatemala",20,14
+1960,"Honduras",12,10
+1960,"Nicaragua",3,3
+1960,"Panama",12,6
+1970,"Belize",1,1
+1970,"Costa Rica",27,22
+1970,"El Salvador",44,31
+1970,"Guatemala",20,14
+1970,"Honduras",2,2
+1970,"Nicaragua",14,12
+1970,"Panama",1,1
+1980,"Costa Rica",13,10
+1980,"El Salvador",1,1
+1980,"Guatemala",4,1
+1980,"Honduras",2,2
+1980,"Nicaragua",4,1
+1990,"Costa Rica",8,8
+1990,"Guatemala",8,8
+1990,"Honduras",46,30
+1990,"Nicaragua",1,1
+1990,"Panama",3,3
+2000,"Belize",11,9
+2000,"Costa Rica",81,64
+2000,"Guatemala",8,5
+2000,"Honduras",53,30
+2000,"Panama",66,43
+2010,"Panama",142,7
+2020,"El Salvador",1,1
+2020,"Honduras",5,2
+2020,"Panama",94,40

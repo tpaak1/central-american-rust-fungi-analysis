@@ -1,0 +1,399 @@
+---
+title: "Central American Rust Fungi Analysis"
+author: "Data Analysis"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load required libraries
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+library(viridis)
+library(scales)
+library(stringr)
+library(lubridate)
+library(viridis)
+```
+
+## Data Loading and Initial Exploration
+
+```{r load_data}
+# Load the Excel file
+data_path <- "../data_temp/Central American Rusts (PUR only) -28-07-25-dca.xlsx"
+rust_data <- read_excel(data_path, sheet = "Combi completa")
+
+# Display basic information
+cat("Dataset dimensions:", dim(rust_data), "\n")
+cat("Number of records:", nrow(rust_data), "\n")
+cat("Number of columns:", ncol(rust_data), "\n")
+
+# Show column names
+print("Column names:")
+print(colnames(rust_data))
+```
+
+## Data Cleaning and Filtering
+
+```{r data_cleaning}
+# Apply the filtering criteria as specified
+cleaned_data <- rust_data %>%
+  # Exclude entries with Year = 1111
+  filter(Year != 1111) %>%
+  # Exclude if there's no rust family AND no host family
+  filter(!(is.na(Family) & is.na(HostFam)))
+
+# Display filtering results
+cat("Original data records:", nrow(rust_data), "\n")
+cat("Records after filtering:", nrow(cleaned_data), "\n")
+cat("Records excluded:", nrow(rust_data) - nrow(cleaned_data), "\n")
+
+# Check for any remaining Year = 1111 entries
+year_1111_check <- cleaned_data %>% filter(Year == 1111) %>% nrow()
+cat("Remaining Year = 1111 entries:", year_1111_check, "\n")
+```
+
+## Data Quality Check
+
+```{r data_quality}
+# Check for missing values in key columns
+missing_summary <- cleaned_data %>%
+  summarise(
+    total_records = n(),
+    missing_rust_family = sum(is.na(Family)),
+    missing_host_family = sum(is.na(HostFam)),
+    missing_host_genus = sum(is.na(HostGen)),
+    missing_host_species = sum(is.na(HostSp)),
+    missing_year = sum(is.na(Year)),
+    missing_country = sum(is.na(Country))
+  )
+
+print("Missing values summary:")
+print(missing_summary)
+
+# Check unique values in key columns
+cat("\nUnique countries:", paste(unique(cleaned_data$Country), collapse = ", "), "\n")
+cat("Year range:", paste(range(cleaned_data$Year, na.rm = TRUE), collapse = " to "), "\n")
+cat("Number of rust families:", length(unique(cleaned_data$Family)), "\n")
+cat("Number of host families:", length(unique(cleaned_data$HostFam)), "\n")
+```
+
+## Figure 1: Rust Fungi per Decade by Country
+
+**Note:** The stacked bar chart and dot plot show the same data but represent it differently:
+- **Stacked bar chart:** Shows cumulative totals per decade, with countries stacked in order of their contribution
+- **Dot plot:** Shows individual country values per decade, making it easier to compare specific countries
+
+For the 1940s specifically:
+- **Guatemala:** 661 records (highest contributor)
+- **Honduras:** 230 records  
+- **El Salvador:** 63 records
+- **Costa Rica:** 25 records (not 1000+ as it might appear in stacked chart)
+- **Nicaragua:** 37 records
+- **Panama:** 1 record
+
+The stacked bar chart order is determined by data sorting, not by absolute values.
+
+```{r figure1}
+# Create decade variable
+cleaned_data <- cleaned_data %>%
+  mutate(
+    decade = floor(Year / 10) * 10,
+    decade_label = paste0(decade, "s")
+  )
+
+# Color coding for countries
+country_colors <- c(
+  "Belize" = "#F49306",
+  "Guatemala" = "#A5BB1A", 
+  "El Salvador" = "#CCAEE0",
+  "Honduras" = "#E0858E",
+  "Nicaragua" = "#51B5E0",
+  "Costa Rica" = "#43C59E",
+  "Panama" = "#F8CC1B"
+)
+
+# Aggregate data by decade and country
+decade_country_summary <- cleaned_data %>%
+  filter(!is.na(decade), !is.na(Country)) %>%
+  group_by(decade, Country) %>%
+  summarise(
+    rust_count = n(),
+    unique_rust_species = n_distinct(paste(Family, Genus, Species, na.rm = TRUE)),
+    .groups = 'drop'
+  ) %>%
+  arrange(decade, Country)
+
+# Create stacked bar chart with proper ordering
+fig1_stacked <- ggplot(decade_country_summary, 
+                       aes(x = decade, y = rust_count, fill = reorder(Country, rust_count))) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = country_colors, name = "Country") +
+  labs(
+    title = "Figure 1: Approximate Number and Trend of Rust Fungi per Decade in Central America",
+    subtitle = "Based on PUR's published and unpublished data",
+    x = "Decade",
+    y = "Number of Rust Fungi Records"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 14, hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14, face = "bold"),
+    legend.position = "bottom",
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 12, face = "bold"),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  scale_x_continuous(breaks = unique(decade_country_summary$decade))
+
+# Create dot plot alternative with better sizing
+fig1_dot <- ggplot(decade_country_summary, 
+                   aes(x = decade, y = rust_count, color = Country, size = rust_count)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = country_colors) +
+  scale_size_continuous(range = c(2, 8), name = "Record Count") +
+  labs(
+    title = "Figure 1: Rust Fungi per Decade in Central America (Dot Plot)",
+    subtitle = "Based on PUR's published and unpublished data",
+    x = "Decade",
+    y = "Number of Rust Fungi Records",
+    color = "Country"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 14, hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14, face = "bold"),
+    legend.position = "bottom",
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 12, face = "bold"),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  scale_x_continuous(breaks = unique(decade_country_summary$decade))
+
+# Display plots with better spacing
+print(fig1_stacked)
+cat("\n\n")  # Add spacing between plots
+print(fig1_dot)
+
+# Additional visualization options for individual country values
+cat("\n\n## Alternative Visualizations for Individual Country Values\n\n")
+
+# 1. Faceted Line Plot (Best for Trends)
+faceted_line <- ggplot(decade_country_summary, 
+                       aes(x = decade, y = rust_count, color = Country, group = Country)) +
+  geom_line(linewidth = 1.2, alpha = 0.8) +
+  geom_point(size = 3, alpha = 0.9) +
+  scale_color_manual(values = country_colors) +
+  facet_wrap(~Country, scales = "free_y", ncol = 3) +
+  labs(
+    title = "Individual Country Trends: Rust Fungi Records per Decade",
+    subtitle = "Each panel shows the collection pattern for one country over time",
+    x = "Decade",
+    y = "Number of Rust Fungi Records"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 14, hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.title = element_text(size = 12, face = "bold"),
+    strip.text = element_text(size = 12, face = "bold"),
+    legend.position = "none",
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  scale_x_continuous(breaks = seq(1850, 2020, 50))
+
+print(faceted_line)
+
+# 2. Heatmap (Best for Comparison)
+heatmap_plot <- ggplot(decade_country_summary, 
+                       aes(x = decade, y = reorder(Country, rust_count, FUN = max), fill = rust_count)) +
+  geom_tile(color = "white", size = 0.5) +
+  geom_text(aes(label = rust_count), size = 3, color = "white", fontface = "bold") +
+  scale_fill_viridis(name = "Record Count", option = "plasma") +
+  labs(
+    title = "Heatmap: Rust Fungi Records by Country and Decade",
+    subtitle = "Lighter colors (yellow) indicate higher record counts. Numbers show exact values.",
+    x = "Decade",
+    y = "Country"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 14, hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12, face = "bold"),
+    axis.title = element_text(size = 14, face = "bold"),
+    legend.position = "bottom",
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  scale_x_continuous(breaks = unique(decade_country_summary$decade))
+
+print(heatmap_plot)
+```
+
+## Table 1: Count of Recorded Instances and Number of Pucciniales by Plant Genus Host
+
+```{r table1}
+# Create Table 1
+table1_data <- cleaned_data %>%
+  filter(!is.na(HostGen)) %>%
+  group_by(HostGen) %>%
+  summarise(
+    number_of_occurrences = n(),
+    number_of_rust_species = n_distinct(paste(Family, Genus, Species, na.rm = TRUE)),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(number_of_occurrences)) %>%
+  head(20)  # Top 20 genera
+
+# Create formatted table
+table1_data %>%
+  kable(
+    col.names = c("Genera", "Number of occurrences", "Number of rust species"),
+    caption = "Table 1. Count of recorded instances and number of Pucciniales by plant genus host recorded in Central America based on current dataset.",
+    format = "html"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), 
+    full_width = FALSE,
+    font_size = 12
+  ) %>%
+  column_spec(1, bold = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#D7261E")
+```
+
+## Table 2: Total Number of Records and Number of Taxa of Pucciniales by Host Plant Family
+
+```{r table2}
+# Create Table 2
+table2_data <- cleaned_data %>%
+  filter(!is.na(HostFam)) %>%
+  group_by(HostFam) %>%
+  summarise(
+    number_of_occurrences = n(),
+    number_of_rust_fungi_species = n_distinct(paste(Family, Genus, Species, na.rm = TRUE)),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(number_of_occurrences)) %>%
+  head(20)  # Top 20 families
+
+# Create formatted table
+table2_data %>%
+  kable(
+    col.names = c("Host family", "Number of occurrences", "Number of rust fungi species"),
+    caption = "Table 2. Total number of records or observation and number of taxa of Pucciniales by host plant family recorded in Central America based on current dataset.",
+    format = "html"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), 
+    full_width = FALSE,
+    font_size = 12
+  ) %>%
+  column_spec(1, bold = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#D7261E")
+```
+
+## Table 3: Number of Occurrences and Number of Taxa of Pucciniales by Host Plant Species
+
+```{r table3}
+# Create Table 3
+table3_data <- cleaned_data %>%
+  filter(!is.na(HostSp)) %>%
+  group_by(HostSp) %>%
+  summarise(
+    number_of_occurrences = n(),
+    number_of_rust_fungi_species = n_distinct(paste(Family, Genus, Species, na.rm = TRUE)),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(number_of_occurrences)) %>%
+  head(20)  # Top 20 species
+
+# Create formatted table
+table3_data %>%
+  kable(
+    col.names = c("Host species", "Number of occurrences", "Number of rust fungi species"),
+    caption = "Table 3. Number of occurrences and number of taxa of Pucciniales by host plant species recorded in Central America based on current dataset.",
+    format = "html"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), 
+    full_width = FALSE,
+    font_size = 12
+  ) %>%
+  column_spec(1, bold = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#D7261E")
+```
+
+## Additional Exploratory Analysis
+
+```{r additional_analysis}
+# Summary statistics by country
+country_summary <- cleaned_data %>%
+  group_by(Country) %>%
+  summarise(
+    total_records = n(),
+    unique_rust_species = n_distinct(paste(Family, Genus, Species, na.rm = TRUE)),
+    unique_host_families = n_distinct(HostFam, na.rm = TRUE),
+    unique_host_genera = n_distinct(HostGen, na.rm = TRUE),
+    year_range = paste(min(Year, na.rm = TRUE), "-", max(Year, na.rm = TRUE)),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(total_records))
+
+print("Summary by Country:")
+print(country_summary)
+
+# Rust family distribution
+rust_family_summary <- cleaned_data %>%
+  group_by(Family) %>%
+  summarise(
+    total_records = n(),
+    unique_species = n_distinct(paste(Genus, Species, na.rm = TRUE)),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(total_records))
+
+print("Rust Family Distribution:")
+print(rust_family_summary)
+```
+
+## Data Export
+
+```{r export_data}
+# Save processed data and results
+write.csv(cleaned_data, "../Analysis Output/cleaned_rust_data.csv", row.names = FALSE)
+write.csv(decade_country_summary, "../Analysis Output/decade_country_summary.csv", row.names = FALSE)
+write.csv(table1_data, "../Analysis Output/table1_host_genera.csv", row.names = FALSE)
+write.csv(table2_data, "../Analysis Output/table2_host_families.csv", row.names = FALSE)
+write.csv(table3_data, "../Analysis Output/table3_host_species.csv", row.names = FALSE)
+write.csv(country_summary, "../Analysis Output/country_summary.csv", row.names = FALSE)
+write.csv(rust_family_summary, "../Analysis Output/rust_family_summary.csv", row.names = FALSE)
+
+cat("Data files have been exported to the Analysis Output folder.\n")
+```
+
+## Session Information
+
+```{r session_info}
+sessionInfo()
+``` 

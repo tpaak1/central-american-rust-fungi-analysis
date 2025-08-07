@@ -1,0 +1,8 @@
+"Country","total_records","unique_rust_species","unique_host_families","unique_host_genera","year_range"
+"Guatemala",2079,401,77,314,"1876 - 2005"
+"Costa Rica",661,269,68,217,"1875 - 2008"
+"Panama",624,157,52,171,"1889 - 2023"
+"Honduras",548,198,47,159,"1921 - 2023"
+"El Salvador",240,124,45,110,"1889 - 2020"
+"Belize",110,70,27,63,"1905 - 2007"
+"Nicaragua",95,61,26,61,"1853 - 1991"
