@@ -156,7 +156,6 @@ This project is for academic research purposes. Please ensure proper attribution
 ## 🤝 Acknowledgments
 
 - **Data Source:** PUR (Purdue University) collections
-- **Analysis Request:** Daniela Chacon Arguello
 - **Visualization Design:** Based on specified color coding for Central American countries
 
 ---
